@@ -4,7 +4,6 @@ import (
 	"flag"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/elazarl/goproxy"
 	log "github.com/liudanking/goutil/logutil"
@@ -18,15 +17,15 @@ func main() {
 		listenAddr     string
 		proxyUrl       string
 		skipCertVerify bool
-		auth           string
-		verbose        bool
+		//auth           string
+		verbose bool
 	)
 
 	flag.StringVar(&listenAddr, "l", ":18080", "listenAddr")
-	flag.StringVar(&proxyUrl, "proxy", "", "upstream proxy url")
-	flag.BoolVar(&skipCertVerify, "k", false, "skip Cert Verify")
-	flag.StringVar(&auth, "auth", "quic-proxy:Go!", "basic auth, format: username:password")
-	flag.BoolVar(&verbose, "v", false, "verbose")
+	flag.StringVar(&proxyUrl, "proxy", "http://localhost:1246", "upstream proxy url")
+	flag.BoolVar(&skipCertVerify, "k", true, "skip Cert Verify")
+	//flag.StringVar(&auth, "auth", "user:psw", "basic auth, format: username:password")
+	flag.BoolVar(&verbose, "v", true, "verbose")
 	flag.Parse()
 
 	proxy := goproxy.NewProxyHttpServer()
@@ -42,12 +41,12 @@ func main() {
 		return
 	}
 
-	parts := strings.Split(auth, ":")
-	if len(parts) != 2 {
-		log.Error("auth param invalid")
-		return
-	}
-	username, password := parts[0], parts[1]
+	// parts := strings.Split(auth, ":")
+	// if len(parts) != 2 {
+	// 	log.Error("auth param invalid")
+	// 	return
+	// }
+	//username, password := parts[0], parts[1]
 
 	proxy.Tr.Proxy = func(req *http.Request) (*url.URL, error) {
 		return url.Parse(proxyUrl)
@@ -57,11 +56,10 @@ func main() {
 	proxy.Tr.Dial = dialer.Dial
 
 	// proxy.ConnectDial = proxy.NewConnectDialToProxy(proxyUrl)
-	proxy.ConnectDial = proxy.NewConnectDialToProxyWithHandler(proxyUrl,
-		SetAuthForBasicConnectRequest(username, password))
+	proxy.ConnectDial = proxy.NewConnectDialToProxyWithHandler(proxyUrl, nil)
 
 	// set basic auth
-	proxy.OnRequest().Do(SetAuthForBasicRequest(username, password))
+	//proxy.OnRequest().Do(SetAuthForBasicRequest(username, password))
 
 	log.Info("start serving %s", listenAddr)
 	log.Error("%v", http.ListenAndServe(listenAddr, proxy))

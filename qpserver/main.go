@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"net/http"
-	"strings"
 
 	"github.com/elazarl/goproxy"
 	"github.com/lucas-clemente/quic-go"
@@ -19,14 +18,14 @@ func main() {
 		listenAddr string
 		cert       string
 		key        string
-		auth       string
-		verbose    bool
+		//auth       string
+		verbose bool
 	)
-	flag.StringVar(&listenAddr, "l", ":443", "listen addr (udp port only)")
-	flag.StringVar(&cert, "cert", "", "cert path")
-	flag.StringVar(&key, "key", "", "key path")
-	flag.StringVar(&auth, "auth", "quic-proxy:Go!", "basic auth, format: username:password")
-	flag.BoolVar(&verbose, "v", false, "verbose")
+	flag.StringVar(&listenAddr, "l", ":1246", "listen addr (udp port only)")
+	flag.StringVar(&cert, "cert", "D:\\Codes\\GO\\proxy\\cert\\cert.pem", "")
+	flag.StringVar(&key, "key", "D:\\Codes\\GO\\proxy\\cert\\domain.key", "")
+	//flag.StringVar(&auth, "auth", "user:psw", "basic auth, format: username:password")
+	flag.BoolVar(&verbose, "v", true, "verbose")
 	flag.Parse()
 
 	log.Info("%v", verbose)
@@ -35,12 +34,12 @@ func main() {
 		return
 	}
 
-	parts := strings.Split(auth, ":")
-	if len(parts) != 2 {
-		log.Error("auth param invalid")
-		return
-	}
-	username, password := parts[0], parts[1]
+	// parts := strings.Split(auth, ":")
+	// if len(parts) != 2 {
+	// 	log.Error("auth param invalid")
+	// 	return
+	// }
+	// username, password := parts[0], parts[1]
 
 	listener, err := quic.ListenAddr(listenAddr, generateTLSConfig(cert, key), nil)
 	if err != nil {
@@ -50,9 +49,9 @@ func main() {
 	ql := common.NewQuicListener(listener)
 
 	proxy := goproxy.NewProxyHttpServer()
-	ProxyBasicAuth(proxy, func(u, p string) bool {
-		return u == username && p == password
-	})
+	// ProxyBasicAuth(proxy, func(u, p string) bool {
+	// 	return u == username && p == password
+	// })
 	proxy.Verbose = verbose
 	server := &http.Server{Addr: listenAddr, Handler: proxy}
 	log.Info("start serving %v", listenAddr)
